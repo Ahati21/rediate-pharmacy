@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { Pharmacist } from '../models/Pharmacist.js';
 import { User } from '../models/User.js';
 import { isValidObjectId, toPublicDocument } from '../utils/mongoose.js';
+import Notification from '../models/Notification.js';
 
 const router = Router();
 
@@ -92,7 +93,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res, next) => {
       avatar,
     });
 
-    await User.create({
+    const pharmacistUser = await User.create({
       name,
       email: normalizedEmail,
       password: hashedPassword,
@@ -100,6 +101,19 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res, next) => {
       role: 'pharmacist',
       isActive: status !== 'Inactive',
     });
+
+    // Create notification for the new pharmacist
+    try {
+      await Notification.create({
+        user: pharmacistUser._id,
+        title: 'Welcome to Rediate Pharmacy',
+        message: 'Your professional account has been created successfully. You can now access the clinical queue.',
+        type: 'success',
+        link: '/pharmacist/queue',
+      });
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+    }
 
     res.status(201).json({
       success: true,
@@ -120,16 +134,31 @@ router.patch('/:id', requireAuth, requireRole('admin'), async (req, res, next) =
       });
     }
 
+    const { email, status } = req.body;
+    const existingPharmacist = await Pharmacist.findById(req.params.id);
+    if (!existingPharmacist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pharmacist not found',
+      });
+    }
+
     const pharmacist = await Pharmacist.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
 
-    if (!pharmacist) {
-      return res.status(404).json({
-        success: false,
-        message: 'Pharmacist not found',
-      });
+    // Update corresponding user if email or status changed
+    try {
+      const updateData = {};
+      if (email) updateData.email = email.trim().toLowerCase();
+      if (status) updateData.isActive = status === 'Approved';
+      
+      if (Object.keys(updateData).length > 0) {
+        await User.findOneAndUpdate({ email: existingPharmacist.email }, updateData);
+      }
+    } catch (err) {
+      console.error('Failed to sync user update:', err);
     }
 
     res.json({
@@ -160,9 +189,16 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res, next) 
       });
     }
 
+    // Delete corresponding user account
+    try {
+      await User.findOneAndDelete({ email: pharmacist.email });
+    } catch (err) {
+      console.error('Failed to delete pharmacist user account:', err);
+    }
+
     res.json({
       success: true,
-      message: 'Pharmacist deleted successfully',
+      message: 'Pharmacist and login account deleted successfully',
       data: toPublicDocument(pharmacist),
     });
   } catch (error) {

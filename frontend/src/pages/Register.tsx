@@ -99,7 +99,7 @@ export default function Register() {
                 <label className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant block ml-1">Full Name</label>
                 <input 
                   className="w-full bg-surface-container-low border-none rounded-xl px-4 py-4 focus:ring-2 focus:ring-primary/20 text-on-surface transition-all" 
-                  placeholder="Dr. Jonathan Reed" 
+                  placeholder="Your full name" 
                   type="text" 
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
@@ -110,7 +110,7 @@ export default function Register() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant block ml-1">Email Address</label>
-                  <input className="w-full bg-surface-container-low border-none rounded-xl px-4 py-4 focus:ring-2 focus:ring-primary/20 text-on-surface transition-all" placeholder="name@rediate.com" type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} required />
+                  <input className="w-full bg-surface-container-low border-none rounded-xl px-4 py-4 focus:ring-2 focus:ring-primary/20 text-on-surface transition-all" placeholder="you@example.com" type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant block ml-1">Phone Number</label>

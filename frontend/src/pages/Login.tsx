@@ -54,8 +54,6 @@ export default function Login() {
           <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent"></div>
           <div className="absolute bottom-12 left-12 right-12 text-white">
             <span className="text-xs font-bold tracking-[0.2rem] uppercase opacity-70 mb-4 block">Rediate Pharmacy</span>
-            <h2 className="text-4xl font-extrabold leading-tight mb-6 font-headline">Clinical care, reimagined for you.</h2>
-            <p className="text-surface-container-low text-lg opacity-90 max-w-sm">Access your prescriptions and health records with high-end precision.</p>
           </div>
         </div>
 
@@ -66,7 +64,7 @@ export default function Login() {
               <span className="material-symbols-outlined text-primary text-2xl">lock_open</span>
             </span>
             <h3 className="text-3xl font-bold text-on-surface tracking-tight mb-2 font-headline">Welcome Back</h3>
-            <p className="text-on-surface-variant font-medium">Please enter your credentials to access the portal</p>
+            <p className="text-on-surface-variant font-medium">Patients can sign in with their own registered email and password</p>
           </div>
 
           <div className="bg-surface-container-low p-1.5 rounded-xl flex mb-10 border border-outline-variant/30 relative">
@@ -100,7 +98,7 @@ export default function Login() {
               <div className="relative group">
                 <input 
                   className="w-full px-5 py-4 bg-surface-container-low border-b-2 border-transparent focus:border-primary rounded-xl text-on-surface placeholder:text-outline focus:ring-0 transition-all" 
-                  placeholder="name@rediate.com"
+                  placeholder="you@example.com"
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
@@ -156,7 +154,7 @@ export default function Login() {
           <div className="mt-10 text-center">
             <div className="flex items-center gap-2 justify-center mb-3 py-2 px-3 bg-secondary-container/30 rounded-lg border border-secondary-container/50">
               <span className="material-symbols-outlined text-primary text-sm">info</span>
-              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Registration is required for all new customers</p>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">New patients should create their own account first</p>
             </div>
             <p className="text-sm text-on-surface-variant">
               New to Rediate Pharmacy? 

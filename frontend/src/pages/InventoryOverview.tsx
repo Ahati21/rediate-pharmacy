@@ -35,9 +35,19 @@ export default function InventoryOverview() {
     );
   });
 
-  const pendingCount = medicines.filter((medicine) => medicine.status === 'Pending').length;
+  const expiredCount = medicines.filter((medicine) => new Date(medicine.expiryDate) < new Date()).length;
   const expiringCount = medicines.filter((medicine) => medicine.status === 'Expiring').length;
   const lowStockCount = medicines.filter((medicine) => medicine.stock <= 15 || medicine.status === 'Low Stock').length;
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this medication? This action cannot be undone.')) return;
+    try {
+      await api.delete(`/medicines/${id}`);
+      setMedicines(medicines.filter(m => m.id !== id));
+    } catch (err) {
+      alert('Failed to delete medication');
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 pb-32 bg-[#F7F9FA] min-h-screen font-sans">
@@ -47,16 +57,16 @@ export default function InventoryOverview() {
             <div className="w-12 h-12 bg-white/60 rounded-2xl flex items-center justify-center text-[#C62828] shadow-sm backdrop-blur-sm">
               <span className="material-symbols-outlined text-[24px]">event_busy</span>
             </div>
-            <span className="bg-white/60 text-[#C62828] text-[11px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm">Attention</span>
+            <span className="bg-white/60 text-[#C62828] text-[11px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm">Danger</span>
           </div>
           <div>
-            <p className="text-[10px] font-black text-[#C62828] uppercase tracking-[0.15em] mb-1">Pending Review</p>
+            <p className="text-[10px] font-black text-[#C62828] uppercase tracking-[0.15em] mb-1">Expired Stock</p>
             <div className="flex items-baseline gap-2 mb-4">
-              <h3 className="text-[42px] font-black text-[#C62828] leading-none tracking-tight">{pendingCount}</h3>
-              <span className="text-[14px] font-bold text-[#C62828]">SKUs</span>
+              <h3 className="text-[42px] font-black text-[#C62828] leading-none tracking-tight">{expiredCount}</h3>
+              <span className="text-[14px] font-bold text-[#C62828]">Items</span>
             </div>
             <p className="text-[12px] text-[#C62828]/80 font-medium italic leading-snug">
-              Newly added medicines waiting for administrative confirmation.
+              Medications past their expiry date. Remove from active inventory immediately.
             </p>
           </div>
         </div>
@@ -132,6 +142,7 @@ export default function InventoryOverview() {
                   <th className="py-4 px-6 text-[10px] font-extrabold text-[#6B7280] uppercase tracking-[0.15em]">Medicine Details</th>
                   <th className="py-4 px-6 text-[10px] font-extrabold text-[#6B7280] uppercase tracking-[0.15em]">Category</th>
                   <th className="py-4 px-6 text-[10px] font-extrabold text-[#6B7280] uppercase tracking-[0.15em]">Stock</th>
+                  <th className="py-4 px-6 text-[10px] font-extrabold text-[#6B7280] uppercase tracking-[0.15em] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -193,6 +204,38 @@ export default function InventoryOverview() {
                             <div className="h-full rounded-full" style={{ width: `${stockPercent}%`, backgroundColor: stockColor }}></div>
                           </div>
                           <span className="text-[12px] font-bold text-[#111827]">{medicine.stock}</span>
+                        </div>
+                      </td>
+                      <td className="py-5 px-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {medicine.status === 'Pending' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await api.patch(`/medicines/${medicine.id}`, { status: 'Approved' });
+                                  const response = await api.get<ApiListResponse<Medication>>('/medicines');
+                                  setMedicines(response.data);
+                                } catch (err) {
+                                  alert('Failed to approve medicine');
+                                }
+                              }}
+                              className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                            >
+                              Approve
+                            </button>
+                          )}
+                          <button
+                            onClick={() => navigate(`/edit-medicine/${medicine.id}`)}
+                            className="w-8 h-8 flex items-center justify-center text-[#004A8F] hover:bg-[#004A8F] hover:text-white rounded-lg transition-all"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(medicine.id)}
+                            className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>

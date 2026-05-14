@@ -60,7 +60,7 @@ export default function PrescriptionStatus() {
             </button>
           </div>
           
-          <p className="mt-8 text-[10px] text-on-surface-variant font-bold uppercase tracking-widest opacity-60">Verified in Addis Ababa Central Hub</p>
+          <p className="mt-8 text-[10px] text-on-surface-variant font-bold uppercase tracking-widest opacity-60">Verified in Central Hub</p>
         </div>
       </motion.div>
     </div>

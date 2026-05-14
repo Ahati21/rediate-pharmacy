@@ -25,4 +25,8 @@ export const env = {
   adminPhone: process.env.ADMIN_PHONE || '',
   uploadDir: process.env.UPLOAD_DIR || path.resolve(process.cwd(), 'uploads'),
   maxUploadSizeBytes: Number(process.env.MAX_UPLOAD_SIZE_BYTES || 10 * 1024 * 1024),
+  chapaSecretKey: process.env.CHAPA_SECRET_KEY,
+  chapaPublicKey: process.env.CHAPA_PUBLIC_KEY,
+  backendUrl: process.env.BACKEND_URL || 'http://localhost:5000',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 };

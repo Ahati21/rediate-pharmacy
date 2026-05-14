@@ -7,6 +7,10 @@ const prescriptionSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    patient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
     patientEmail: {
       type: String,
       lowercase: true,

@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import bcrypt from 'bcryptjs';
-import { User } from '../models/User.js';
-import { requireAuth } from '../middleware/auth.js';
-import { toPublicDocument } from '../utils/mongoose.js';
-import { createAuthToken } from '../utils/token.js';
+import { Router } from "express";
+import bcrypt from "bcryptjs";
+import { User } from "../models/User.js";
+import { requireAuth } from "../middleware/auth.js";
+import { toPublicDocument } from "../utils/mongoose.js";
+import { createAuthToken } from "../utils/token.js";
 
 const router = Router();
 
@@ -21,15 +21,16 @@ function toAuthResponse(user) {
   };
 }
 
-router.post('/register', async (req, res, next) => {
+router.post("/register", async (req, res, next) => {
   try {
     const { name, email, password, phone } = req.body;
-    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
 
     if (!name || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required',
+        message: "Name, email, and password are required",
       });
     }
 
@@ -37,7 +38,7 @@ router.post('/register', async (req, res, next) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'User already exists with this email',
+        message: "User already exists with this email",
       });
     }
 
@@ -48,28 +49,30 @@ router.post('/register', async (req, res, next) => {
       email: normalizedEmail,
       password: hashedPassword,
       phone,
-      role: 'customer',
+      role: "customer",
     });
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful',
+      message: "Registration successful",
       data: toAuthResponse(user),
     });
   } catch (error) {
+    console.error("Auth register error:", error);
     next(error);
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post("/login", async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
-    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
 
     if (!normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required',
+        message: "Email and password are required",
       });
     }
 
@@ -77,22 +80,33 @@ router.post('/login', async (req, res, next) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'No account found with this email. Please register first.',
+        message: "No account found with this email. Please register first.",
       });
     }
 
-    if (!user.password) {
+    if (!user.password || typeof user.password !== "string") {
       return res.status(401).json({
         success: false,
-        message: 'This account does not have a password. Please contact the admin.',
+        message:
+          "This account does not have a valid password. Please create a new patient account or contact the admin.",
       });
     }
 
-    const passwordMatches = await bcrypt.compare(password, user.password);
+    let passwordMatches = false;
+    try {
+      passwordMatches = await bcrypt.compare(String(password), user.password);
+    } catch (error) {
+      console.error("Password check failed:", error);
+      return res.status(401).json({
+        success: false,
+        message:
+          "This account password could not be verified. Please create a new patient account or contact the admin.",
+      });
+    }
     if (!passwordMatches) {
       return res.status(401).json({
         success: false,
-        message: 'Incorrect password. Please try again.',
+        message: "Incorrect password. Please try again.",
       });
     }
 
@@ -105,15 +119,16 @@ router.post('/login', async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: toAuthResponse(user),
     });
   } catch (error) {
+    console.error("Auth login error:", error);
     next(error);
   }
 });
 
-router.get('/me', requireAuth, async (req, res) => {
+router.get("/me", requireAuth, async (req, res) => {
   res.json({
     success: true,
     data: toAuthResponse(req.auth.user),

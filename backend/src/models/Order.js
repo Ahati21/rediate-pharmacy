@@ -1,10 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
   {
     medicineId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Medicine',
+      ref: "Medicine",
     },
     name: {
       type: String,
@@ -39,7 +39,7 @@ const orderSchema = new mongoose.Schema(
     },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
     customerName: {
       type: String,
@@ -53,13 +53,13 @@ const orderSchema = new mongoose.Schema(
     },
     prescription: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Prescription',
+      ref: "Prescription",
     },
     items: {
       type: [orderItemSchema],
       validate: {
         validator: (value) => Array.isArray(value) && value.length > 0,
-        message: 'Order must contain at least one item',
+        message: "Order must contain at least one item",
       },
     },
     deliveryAddress: {
@@ -69,7 +69,7 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       trim: true,
-      default: 'cash',
+      default: "cash",
     },
     subtotal: {
       type: Number,
@@ -93,8 +93,28 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'verified', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: [
+        "pending",
+        "confirmed",
+        "verified",
+        "preparing",
+        "out_for_delivery",
+        "delivered",
+        "cancelled",
+      ],
+      default: "pending",
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "completed", "failed", "cancelled"],
+      default: "pending",
+    },
+    transactionRef: {
+      type: String,
+      sparse: true,
+    },
+    paidAt: {
+      type: Date,
     },
     timeline: [
       {
@@ -118,7 +138,7 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-orderSchema.pre('save', function attachOrderNumber(next) {
+orderSchema.pre("save", function attachOrderNumber(next) {
   if (!this.orderNumber) {
     const randomPart = Math.floor(10000 + Math.random() * 90000);
     this.orderNumber = `RD-${randomPart}`;
@@ -128,7 +148,7 @@ orderSchema.pre('save', function attachOrderNumber(next) {
     this.timeline = [
       {
         status: this.status,
-        note: 'Order created',
+        note: "Order created",
       },
     ];
   }
@@ -136,4 +156,4 @@ orderSchema.pre('save', function attachOrderNumber(next) {
   next();
 });
 
-export const Order = mongoose.model('Order', orderSchema);
+export const Order = mongoose.model("Order", orderSchema);

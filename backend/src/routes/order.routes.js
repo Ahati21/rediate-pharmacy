@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { Order } from '../models/Order.js';
 import { Medicine } from '../models/Medicine.js';
 import { isValidObjectId, toPublicDocument } from '../utils/mongoose.js';
+import Notification from '../models/Notification.js';
 
 const router = Router();
 
@@ -151,12 +152,20 @@ router.post('/', requireAuth, async (req, res, next) => {
       totalAmount: roundCurrency(subtotal + tax + deliveryFee),
     });
 
-    // 3. Decrement stock for medicines with IDs
+    // 3. Decrement stock for medicines with IDs and update status
     for (const item of normalizedItems) {
       if (item.medicineId) {
-        await Medicine.findByIdAndUpdate(item.medicineId, {
-          $inc: { stock: -item.quantity },
-        });
+        const updatedMedicine = await Medicine.findByIdAndUpdate(
+          item.medicineId,
+          { $inc: { stock: -item.quantity } },
+          { new: true }
+        );
+
+        // Update status if stock is low
+        if (updatedMedicine && updatedMedicine.stock < 10 && updatedMedicine.status === 'Approved') {
+          updatedMedicine.status = 'Low Stock';
+          await updatedMedicine.save();
+        }
       }
     }
 
@@ -206,6 +215,29 @@ router.patch('/:id/status', requireAuth, requireRole('admin', 'pharmacist'), asy
     });
 
     await order.save();
+
+    // Create notification for the customer
+    try {
+      const statusTitles = {
+        verified: 'Payment Verified',
+        preparing: 'Order Being Prepared',
+        out_for_delivery: 'Out for Delivery',
+        delivered: 'Order Delivered',
+        cancelled: 'Order Cancelled',
+      };
+
+      if (statusTitles[status]) {
+        await Notification.create({
+          user: order.customer,
+          title: statusTitles[status],
+          message: `Your order #${order.orderNumber} status has been updated to ${status}.`,
+          type: status === 'cancelled' ? 'error' : status === 'delivered' ? 'success' : 'info',
+          link: `/tracking?orderId=${order._id}`,
+        });
+      }
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+    }
 
     res.json({
       success: true,

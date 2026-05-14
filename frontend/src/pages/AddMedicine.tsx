@@ -34,7 +34,7 @@ export default function AddMedicine() {
         stock: Number(formData.stock),
         price: Number(formData.price),
         expiryDate: formData.expiryDate,
-        status: Number(formData.stock) <= 15 ? 'Low Stock' : 'Approved',
+        status: 'Pending',
         type: formData.category.toLowerCase().includes('vaccine')
           ? 'vaccines'
           : formData.category.toLowerCase().includes('syrup')

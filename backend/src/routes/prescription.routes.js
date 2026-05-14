@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { Prescription } from '../models/Prescription.js';
 import { isValidObjectId, toPublicDocument } from '../utils/mongoose.js';
+import Notification from '../models/Notification.js';
+import { User } from '../models/User.js';
 import { persistPrescriptionUpload } from '../utils/uploads.js';
 
 const router = Router();
@@ -91,10 +93,26 @@ router.post('/', requireAuth, async (req, res, next) => {
 
     const prescription = await Prescription.create({
       ...req.body,
+      patient: req.body.patient || req.auth.userId,
       patientEmail: req.body.patientEmail || req.auth.user.email,
       patientName: req.body.patientName || req.auth.user.name,
       ...uploadFields,
     });
+
+    // Create notifications for all pharmacists and admins
+    try {
+      const staff = await User.find({ role: { $in: ['admin', 'pharmacist'] } });
+      const notifications = staff.map(user => ({
+        user: user._id,
+        title: 'New Prescription Uploaded',
+        message: `Patient ${prescription.patientName} has uploaded a new prescription for review.`,
+        type: 'info',
+        link: `/pharmacist/review/${prescription._id}`
+      }));
+      await Notification.insertMany(notifications);
+    } catch (notifError) {
+      console.error('Failed to create staff notifications:', notifError);
+    }
 
     res.status(201).json({
       success: true,
@@ -148,6 +166,31 @@ router.patch('/:id/review', requireAuth, requireRole('admin', 'pharmacist'), asy
         success: false,
         message: 'Prescription not found',
       });
+    }
+
+    // Create notification for the patient
+    try {
+      let patientId = prescription.patient;
+      
+      // Fallback if patient field is missing: find user by email
+      if (!patientId && prescription.patientEmail) {
+        const user = await User.findOne({ email: prescription.patientEmail });
+        if (user) patientId = user._id;
+      }
+
+      if (patientId) {
+        await Notification.create({
+          user: patientId,
+          title: status === 'approved' ? 'Prescription Approved' : 'Prescription Rejected',
+          message: status === 'approved' 
+            ? `Your prescription from Dr. ${prescription.doctorName} has been approved. You can now proceed to order.`
+            : `Your prescription from Dr. ${prescription.doctorName} was rejected: ${rejectionReason}`,
+          type: status === 'approved' ? 'success' : 'error',
+          link: status === 'approved' ? '/search' : '/upload-script',
+        });
+      }
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
     }
 
     res.json({

@@ -18,6 +18,7 @@ export interface Medication {
   stock: number;
   batchNumber: string;
   expiryDate: string;
+  notes?: string;
   status: 'Approved' | 'Low Stock' | 'Expiring' | 'Pending';
   type: 'pill' | 'medication_liquid' | 'vaccines';
 }
@@ -39,6 +40,7 @@ export interface Order {
   customerName: string;
   customerEmail: string;
   paymentMethod?: string;
+  transactionRef?: string;
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'verified' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
   createdAt: string;
@@ -88,11 +90,31 @@ export interface Prescription {
 }
 export interface SalesReportData {
   totalSales: number;
+  netProfit: number;
   averageOrderValue: number;
+  totalOrders: number;
+  period: 'daily' | 'weekly' | 'monthly';
+  changes: {
+    sales: number;
+    profit: number;
+    avgValue: number;
+  };
+  range: {
+    start: string;
+    end: string;
+  };
   topMedications: Array<{
     name: string;
+    category: string;
     volume: number;
     revenue: number;
+    profit: number;
+    currentStock: number;
+    icon: string;
   }>;
-  totalOrders: number;
+  salesTrend: Array<{
+    label: string;
+    actual: number;
+    projected: number;
+  }>;
 }

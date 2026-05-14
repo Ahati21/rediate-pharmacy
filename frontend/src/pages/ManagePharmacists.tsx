@@ -9,8 +9,11 @@ export default function ManagePharmacists() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState('');
 
-  React.useEffect(() => {
-    async function loadPharmacists() {
+    React.useEffect(() => {
+      fetchData();
+    }, []);
+
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         const response = await api.get<ApiListResponse<Pharmacist>>('/pharmacists');
@@ -20,56 +23,75 @@ export default function ManagePharmacists() {
       } finally {
         setIsLoading(false);
       }
-    }
+    };
 
-    void loadPharmacists();
-  }, []);
+    const activeCount = pharmacists.filter((pharmacist) => pharmacist.status === 'Approved').length;
+    const pendingCount = pharmacists.filter((pharmacist) => pharmacist.status === 'Pending').length;
+    const verifiedPercent = pharmacists.length ? Math.round((activeCount / pharmacists.length) * 100) : 0;
 
-  const activeCount = pharmacists.filter((pharmacist) => pharmacist.status === 'Approved').length;
-  const pendingCount = pharmacists.filter((pharmacist) => pharmacist.status === 'Pending').length;
-  const verifiedPercent = pharmacists.length ? Math.round((activeCount / pharmacists.length) * 100) : 0;
+    const handleDelete = async (id: string) => {
+      if (!window.confirm('Are you sure you want to remove this pharmacist? This will revoke their access immediately.')) return;
+      try {
+        await api.delete(`/pharmacists/${id}`);
+        setPharmacists(pharmacists.filter(p => p.id !== id));
+      } catch (err) {
+        alert('Failed to remove pharmacist');
+      }
+    };
 
-  return (
-    <div className="max-w-5xl mx-auto px-6 py-8 pb-32 bg-[#F7F9FA] min-h-screen">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-[32px] md:text-4xl font-extrabold text-[#111827] leading-[1.1] tracking-tight mb-3">
-            Manage Pharmacists
-          </h1>
-          <p className="text-[14px] text-[#4B5563] leading-relaxed max-w-2xl">
-            Monitor staff credentials, roles, and access levels for the clinical pharmaceutical division.
-          </p>
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8 pb-32 bg-[#F7F9FA] min-h-screen">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-[32px] md:text-4xl font-extrabold text-[#111827] leading-[1.1] tracking-tight mb-3">
+              Manage Pharmacists
+            </h1>
+            <p className="text-[14px] text-[#4B5563] leading-relaxed max-w-2xl">
+              Monitor staff credentials, roles, and access levels for the clinical pharmaceutical division.
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/add-pharmacist')}
+            className="bg-[#004A8F] text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 shadow-sm hover:bg-[#003870] transition-colors shrink-0"
+          >
+            <span className="material-symbols-outlined text-[20px]">person_add</span>
+            Add Pharmacist
+          </button>
         </div>
 
-        <button
-          onClick={() => navigate('/add-pharmacist')}
-          className="bg-[#004A8F] text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 shadow-sm hover:bg-[#003870] transition-colors shrink-0"
-        >
-          <span className="material-symbols-outlined text-[20px]">person_add</span>
-          Add Pharmacist
-        </button>
-      </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
+          {isLoading && (
+            <div className="col-span-full rounded-[20px] bg-white p-6 text-center text-sm font-medium text-[#6B7280] shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+              Loading pharmacists...
+            </div>
+          )}
+          {!isLoading && error && (
+            <div className="col-span-full rounded-[20px] bg-white p-6 text-center text-sm font-medium text-red-600 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+              {error}
+            </div>
+          )}
+          {!isLoading && !error && pharmacists.map((pharmacist) => (
+            <div key={pharmacist.id} className="bg-white rounded-[20px] p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] relative flex flex-col hover:shadow-md transition-shadow group">
+              {/* Action Buttons Overlay */}
+              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => navigate(`/edit-pharmacist/${pharmacist.id}`)}
+                  className="w-8 h-8 rounded-lg bg-blue-50 text-[#004A8F] flex items-center justify-center hover:bg-[#004A8F] hover:text-white transition-all shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button 
+                  onClick={() => handleDelete(pharmacist.id)}
+                  className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
-        {isLoading && (
-          <div className="col-span-full rounded-[20px] bg-white p-6 text-center text-sm font-medium text-[#6B7280] shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            Loading pharmacists...
-          </div>
-        )}
-        {!isLoading && error && (
-          <div className="col-span-full rounded-[20px] bg-white p-6 text-center text-sm font-medium text-red-600 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            {error}
-          </div>
-        )}
-        {!isLoading && !error && pharmacists.map((pharmacist) => (
-          <div key={pharmacist.id} className="bg-white rounded-[20px] p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] relative flex flex-col hover:shadow-md transition-shadow">
-            <div className="flex gap-4 mb-5">
-              <div className="w-16 h-16 rounded-full overflow-hidden shrink-0">
-                <img
-                  className="w-full h-full object-cover"
-                  src={pharmacist.avatar || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=150'}
-                  alt={pharmacist.name}
-                />
+              <div className="flex gap-4 mb-5">
+              <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-[#6B7280] dark:text-slate-400 shrink-0 border border-gray-200 dark:border-slate-600">
+                <span className="material-symbols-outlined text-[32px]">person</span>
               </div>
               <div>
                 <h3 className="font-bold text-[#111827] text-[16px] mb-1">{pharmacist.name}</h3>

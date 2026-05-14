@@ -8,9 +8,11 @@ import RegisterSuccess from './pages/RegisterSuccess';
 import AdminDashboard from './pages/AdminDashboard';
 import InventoryOverview from './pages/InventoryOverview';
 import AddMedicine from './pages/AddMedicine';
+import EditMedicine from './pages/EditMedicine';
 import MedicineSuccess from './pages/MedicineSuccess';
 import ManagePharmacists from './pages/ManagePharmacists';
 import AddPharmacist from './pages/AddPharmacist';
+import EditPharmacist from './pages/EditPharmacist';
 import PharmacistSuccess from './pages/PharmacistSuccess';
 import MedicationSearch from './pages/MedicationSearch';
 import Cart from './pages/Cart';
@@ -24,9 +26,11 @@ import CustomerHome from './pages/CustomerHome';
 import PharmacistQueue from './pages/PharmacistQueue';
 import ClinicalReview from './pages/ClinicalReview';
 import SalesReport from './pages/SalesReport';
+import CheckoutSuccess from './pages/CheckoutSuccess';
 import { useAuth } from './AuthContext';
 import { ThemeProvider } from './ThemeContext';
 import { UserRole } from './types';
+import PaymentPage from "./pages/PaymentPage";
 
 function homeForRole(role: UserRole) {
   if (role === 'pharmacist') return '/pharmacist/queue';
@@ -77,6 +81,8 @@ export default function App() {
             <Route path="/prescription-approved" element={requireRole(['customer'], <PrescriptionApproved />)} />
             <Route path="/success" element={requireRole(['customer'], <OrderSuccess />)} />
             <Route path="/tracking" element={requireRole(['customer'], <OrderTracking />)} />
+            <Route path="/payment/:orderId" element={requireRole(['customer'], <PaymentPage />)} />
+            <Route path="/checkout-success" element={requireRole(['customer'], <CheckoutSuccess />)} />
 
             <Route path="/pharmacist/queue" element={requireRole(['pharmacist'], <PharmacistQueue />)} />
             <Route path="/pharmacist/review/:id" element={requireRole(['pharmacist'], <ClinicalReview />)} />
@@ -85,9 +91,11 @@ export default function App() {
             <Route path="/admin/sales" element={requireRole(['admin'], <SalesReport />)} />
             <Route path="/inventory" element={requireRole(['admin', 'pharmacist'], <InventoryOverview />)} />
             <Route path="/add-medicine" element={requireRole(['admin', 'pharmacist'], <AddMedicine />)} />
+            <Route path="/edit-medicine/:id" element={requireRole(['admin', 'pharmacist'], <EditMedicine />)} />
             <Route path="/medicine-success" element={requireRole(['admin', 'pharmacist'], <MedicineSuccess />)} />
             <Route path="/pharmacists" element={requireRole(['admin'], <ManagePharmacists />)} />
             <Route path="/add-pharmacist" element={requireRole(['admin'], <AddPharmacist />)} />
+            <Route path="/edit-pharmacist/:id" element={requireRole(['admin'], <EditPharmacist />)} />
             <Route path="/pharmacist-success" element={requireRole(['admin'], <PharmacistSuccess />)} />
 
             <Route path="*" element={<Navigate to="/" />} />

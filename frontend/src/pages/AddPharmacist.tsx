@@ -51,8 +51,8 @@ export default function AddPharmacist() {
         <button onClick={() => navigate('/pharmacists')} className="text-[12px] font-bold text-[#004A8F] dark:text-blue-400 hover:underline mr-4">
           Back to Staff List
         </button>
-        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-slate-600 shadow-sm">
-          <img src="https://images.unsplash.com/photo-1559839734-2b71f1536785?auto=format&fit=crop&q=80&w=100" alt="Admin" className="w-full h-full object-cover" />
+        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-[#6B7280] dark:text-slate-400 border-2 border-white dark:border-slate-600 shadow-sm">
+          <span className="material-symbols-outlined text-[20px]">person</span>
         </div>
       </div>
 
@@ -80,14 +80,6 @@ export default function AddPharmacist() {
               </div>
             </div>
 
-            <div className="relative h-[300px] rounded-[40px] overflow-hidden shadow-2xl group">
-              <img src="https://images.unsplash.com/photo-1576091160550-2173ff9e5eb2?auto=format&fit=crop&q=80&w=800" alt="Clinical Care" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#004A8F]/80 to-transparent flex items-end p-10">
-                <p className="text-white text-[22px] font-black leading-tight italic">
-                  "Excellence in clinical care starts with elite coordination."
-                </p>
-              </div>
-            </div>
           </div>
 
           <form className="bg-white dark:bg-slate-800 rounded-[40px] p-10 shadow-xl border border-gray-50 dark:border-slate-700 space-y-10" onSubmit={handleSubmit}>

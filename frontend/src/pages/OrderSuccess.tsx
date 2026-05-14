@@ -88,7 +88,7 @@ export default function OrderSuccess() {
               <div>
                 <p className="text-[11px] font-black text-[#004A8F] uppercase tracking-widest mb-1">Delivery Address</p>
                 <p className="text-[14px] font-bold leading-relaxed">
-                  {orderDraft?.deliveryAddress || 'Woreda 03, House No. 1240/B, Addis Ababa'}
+                  {orderDraft?.deliveryAddress || 'Woreda 03, House No. 1240/B'}
                 </p>
               </div>
             </div>

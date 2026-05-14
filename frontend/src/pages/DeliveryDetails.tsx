@@ -17,7 +17,7 @@ export default function DeliveryDetails() {
   const handleContinue = () => {
     if (!orderDraft) return;
 
-    const fullAddress = `Woreda ${woreda}, House No. ${houseNo}${landmarks ? `, Near ${landmarks}` : ''}, Addis Ababa`;
+    const fullAddress = `Woreda ${woreda}, House No. ${houseNo}${landmarks ? `, Near ${landmarks}` : ''}`;
     
     setOrderDraft({
       ...orderDraft,

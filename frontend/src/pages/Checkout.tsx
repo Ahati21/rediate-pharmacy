@@ -28,7 +28,7 @@ export default function Checkout() {
       setIsSubmitting(true);
       setError('');
 
-      const response = await api.post<ApiItemResponse<{ _id: string; orderNumber: string }>>('/orders', {
+      const response = await api.post<ApiItemResponse<{ id: string; orderNumber: string }>>('/orders', {
         customer: user?.id,
         customerName: userName || user?.name || 'Customer',
         customerEmail: user?.email,
@@ -38,23 +38,23 @@ export default function Checkout() {
           unitPrice: item.unitPrice,
           totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
         })),
-        deliveryAddress: orderDraft.deliveryAddress || 'Woreda 03, House No. 1240/B, Addis Ababa',
+        deliveryAddress: orderDraft.deliveryAddress || 'Woreda 03, House No. 1240/B',
         paymentMethod: 'Chapa Pay',
         subtotal: orderDraft.subtotal,
         tax: orderDraft.tax,
         deliveryFee: orderDraft.deliveryFee,
         totalAmount: orderDraft.totalAmount,
-        status: 'confirmed',
+        status: 'pending',
       });
 
       setOrderDraft({
         ...orderDraft,
-        id: response.data._id,
+        id: response.data.id,
         orderNumber: response.data.orderNumber,
-        deliveryAddress: orderDraft.deliveryAddress || 'Woreda 03, House No. 1240/B, Addis Ababa',
+        deliveryAddress: orderDraft.deliveryAddress || 'Woreda 03, House No. 1240/B',
       });
 
-      navigate('/success');
+      navigate(`/payment/${response.data.id}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to place order');
     } finally {
@@ -100,7 +100,7 @@ export default function Checkout() {
 
               <div className="bg-white rounded-[16px] p-4 mb-3 shadow-sm">
                 <p className="text-[9px] font-black text-[#6B7280] uppercase tracking-widest mb-1">Home Address</p>
-                <p className="text-[14px] font-black text-[#111827] mb-1">{orderDraft.deliveryAddress || 'Woreda 03, House No. 1240/B, Addis Ababa'}</p>
+                <p className="text-[14px] font-black text-[#111827] mb-1">{orderDraft.deliveryAddress || 'Woreda 03, House No. 1240/B'}</p>
                 <div className="inline-flex items-center gap-1 bg-[#E6F4EA] text-[#006644] text-[9px] font-black px-2 py-1 rounded-full uppercase">
                   <span className="material-symbols-outlined text-[12px]">check_circle</span>
                   Verified Location
