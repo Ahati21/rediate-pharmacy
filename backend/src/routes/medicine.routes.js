@@ -10,6 +10,37 @@ router.get('/', async (_req, res, next) => {
   try {
     const medicines = await Medicine.find().sort({ createdAt: -1 });
 
+    // Auto-update statuses for medicines whose expiry/stock may have changed
+    const bulkOps = medicines
+      .map(med => {
+        const correctStatus = resolveMedicineStatus({
+          stock: med.stock,
+          expiryDate: med.expiryDate,
+          status: med.status,
+        });
+        if (correctStatus !== med.status) {
+          return {
+            updateOne: {
+              filter: { _id: med._id },
+              update: { $set: { status: correctStatus } },
+            },
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (bulkOps.length > 0) {
+      await Medicine.bulkWrite(bulkOps);
+      // Re-fetch updated medicines
+      const updated = await Medicine.find().sort({ createdAt: -1 });
+      return res.json({
+        success: true,
+        count: updated.length,
+        data: updated.map(toPublicDocument),
+      });
+    }
+
     res.json({
       success: true,
       count: medicines.length,

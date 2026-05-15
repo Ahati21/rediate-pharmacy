@@ -39,7 +39,7 @@ const medicineSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Approved', 'Low Stock', 'Expiring', 'Pending'],
+      enum: ['Approved', 'Low Stock', 'Expiring', 'Expired', 'Pending'],
       default: 'Pending',
     },
     type: {

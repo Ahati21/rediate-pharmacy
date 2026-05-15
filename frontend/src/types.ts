@@ -19,7 +19,7 @@ export interface Medication {
   batchNumber: string;
   expiryDate: string;
   notes?: string;
-  status: 'Approved' | 'Low Stock' | 'Expiring' | 'Pending';
+  status: 'Approved' | 'Low Stock' | 'Expiring' | 'Expired' | 'Pending';
   type: 'pill' | 'medication_liquid' | 'vaccines';
 }
 
@@ -57,6 +57,7 @@ export interface DashboardStats {
     total: number;
     lowStock: number;
     expiring: number;
+    expired: number;
   };
   orders: {
     total: number;

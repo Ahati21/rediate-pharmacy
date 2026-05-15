@@ -122,23 +122,33 @@ export default function SalesReport() {
         {/* 1. Metric Cards - Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
-            { label: 'Total Sales', value: `ETB ${data.totalSales.toLocaleString()}`, change: `+${data.changes.sales}%`, color: '#004A8F', icon: 'payments' },
-            { label: 'Net Profit', value: `ETB ${data.netProfit.toLocaleString()}`, change: `+${data.changes.profit}%`, color: '#006644', icon: 'trending_up' },
-            { label: 'Avg Order Value', value: `ETB ${data.averageOrderValue.toLocaleString()}`, change: `${data.changes.avgValue}%`, color: '#4A545E', icon: 'shopping_basket' }
-          ].map((stat, i) => (
-            <div key={i} className="bg-white dark:bg-slate-800 rounded-[28px] p-8 shadow-sm border border-white dark:border-slate-700/50 hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300 group">
-              <div className="flex justify-between items-start mb-6">
-                <div className="p-3 bg-[#F8FAFB] dark:bg-slate-900 rounded-2xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
-                  <span className="material-symbols-outlined text-[24px]" style={{ color: stat.color }}>{stat.icon}</span>
+            { label: 'Total Sales',     value: `ETB ${data.totalSales.toLocaleString()}`,       changeVal: data.changes.sales,    color: '#004A8F', icon: 'payments' },
+            { label: 'Net Profit',      value: `ETB ${data.netProfit.toLocaleString()}`,         changeVal: data.changes.profit,   color: '#006644', icon: 'trending_up' },
+            { label: 'Avg Order Value', value: `ETB ${data.averageOrderValue.toLocaleString()}`, changeVal: data.changes.avgValue, color: '#4A545E', icon: 'shopping_basket' }
+          ].map((stat, i) => {
+            const isPositive = stat.changeVal > 0;
+            const isZero     = stat.changeVal === 0;
+            const changeLabel = isZero ? '0%' : `${isPositive ? '+' : ''}${stat.changeVal}%`;
+            const changeCls   = isPositive
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+              : isZero
+                ? 'bg-gray-50 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
+                : 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400';
+            return (
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-[28px] p-8 shadow-sm border border-white dark:border-slate-700/50 hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300 group">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="p-3 bg-[#F8FAFB] dark:bg-slate-900 rounded-2xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
+                    <span className="material-symbols-outlined text-[24px]" style={{ color: stat.color }}>{stat.icon}</span>
+                  </div>
+                  <span className={`text-[11px] font-black px-3 py-1.5 rounded-xl ${changeCls}`}>
+                    {changeLabel}
+                  </span>
                 </div>
-                <span className={`text-[11px] font-black px-3 py-1.5 rounded-xl ${stat.change.startsWith('+') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'}`}>
-                  {stat.change}
-                </span>
+                <p className="text-[11px] font-black text-[#9CA3AF] dark:text-slate-500 tracking-widest uppercase mb-1">{stat.label}</p>
+                <h3 className="text-[28px] font-black text-[#111827] dark:text-white tracking-tight">{stat.value}</h3>
               </div>
-              <p className="text-[11px] font-black text-[#9CA3AF] dark:text-slate-500 tracking-widest uppercase mb-1">{stat.label}</p>
-              <h3 className="text-[28px] font-black text-[#111827] dark:text-white tracking-tight">{stat.value}</h3>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* 2. Main Content Grid - SIDE BY SIDE */}
@@ -165,23 +175,41 @@ export default function SalesReport() {
                 </div>
               </div>
               
-              <div className="flex items-end justify-between gap-4 h-[300px] px-2">
-                 {salesTrend.map((item) => (
-                   <div key={item.label} className="flex-1 flex flex-col items-center gap-4 h-full group relative">
-                      <div className="w-full flex flex-col justify-end gap-[6px] h-full">
-                         {/* Projected Bar */}
-                         <div className="w-full bg-[#F2F4F7] dark:bg-slate-700/50 rounded-t-[8px] transition-all group-hover:bg-[#E5E7EB]" style={{ height: `${Math.max(10, (item.projected / maxTrendValue) * 100)}%` }}></div>
-                         {/* Actual Bar */}
-                         <div className="w-full bg-[#004A8F] dark:bg-blue-600 rounded-b-[6px] transition-all group-hover:saturate-150 shadow-xl shadow-blue-900/10" style={{ height: `${Math.max(20, (item.actual / maxTrendValue) * 100)}%` }}></div>
-                      </div>
-                      <span className="text-[11px] font-black text-[#9CA3AF] dark:text-slate-500 uppercase tracking-tighter whitespace-nowrap">{item.label}</span>
-                      
-                      {/* Tooltip on Hover */}
-                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-black text-white px-3 py-2 rounded-xl text-[10px] font-black opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-xl whitespace-nowrap">
-                        ETB {item.actual.toLocaleString()}
-                      </div>
-                   </div>
-                 ))}
+              <div className="flex items-end justify-between gap-3 h-[280px] px-2 pt-2">
+                 {salesTrend.map((item) => {
+                   const actualPct  = maxTrendValue > 0 ? Math.round((item.actual  / maxTrendValue) * 100) : 0;
+                   const targetPct  = maxTrendValue > 0 ? Math.round((item.projected / maxTrendValue) * 100) : 0;
+                   return (
+                     <div key={item.label} className="flex-1 flex flex-col items-center gap-2 h-full group relative">
+                       {/* Stacked bars container */}
+                       <div className="w-full flex items-end justify-center gap-[3px] h-full">
+                         {/* Target bar */}
+                         <div
+                           className="flex-1 bg-[#D1E1EC] dark:bg-slate-600 rounded-t-[6px] transition-all duration-500 group-hover:bg-[#B8D0E3]"
+                           style={{ height: `${Math.max(2, targetPct)}%` }}
+                           title={`Target: ETB ${item.projected.toLocaleString()}`}
+                         />
+                         {/* Actual bar */}
+                         <div
+                           className={`flex-1 rounded-t-[6px] transition-all duration-500 group-hover:saturate-150 shadow-lg shadow-blue-900/10 ${
+                             item.actual > 0
+                               ? 'bg-[#004A8F] dark:bg-blue-600'
+                               : 'bg-[#CBD5E1] dark:bg-slate-700'
+                           }`}
+                           style={{ height: item.actual > 0 ? `${Math.max(3, actualPct)}%` : '3%' }}
+                           title={`Actual: ETB ${item.actual.toLocaleString()}`}
+                         />
+                       </div>
+                       <span className="text-[10px] font-black text-[#9CA3AF] dark:text-slate-500 uppercase tracking-tighter whitespace-nowrap">{item.label}</span>
+
+                       {/* Tooltip on Hover */}
+                       <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-[#111827] text-white px-3 py-2 rounded-xl text-[10px] font-black opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-xl whitespace-nowrap space-y-0.5">
+                         <p className="text-blue-400">Act: ETB {item.actual.toLocaleString()}</p>
+                         <p className="text-slate-300">Tgt: ETB {item.projected.toLocaleString()}</p>
+                       </div>
+                    </div>
+                  );
+                 })}
               </div>
             </div>
 

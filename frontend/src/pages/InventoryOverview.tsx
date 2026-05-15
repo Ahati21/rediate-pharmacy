@@ -35,7 +35,7 @@ export default function InventoryOverview() {
     );
   });
 
-  const expiredCount = medicines.filter((medicine) => new Date(medicine.expiryDate) < new Date()).length;
+  const expiredCount = medicines.filter((medicine) => medicine.status === 'Expired' || new Date(medicine.expiryDate) < new Date()).length;
   const expiringCount = medicines.filter((medicine) => medicine.status === 'Expiring').length;
   const lowStockCount = medicines.filter((medicine) => medicine.stock <= 15 || medicine.status === 'Low Stock').length;
 
@@ -169,15 +169,22 @@ export default function InventoryOverview() {
                 )}
                 {!isLoading && !error && filteredMedicines.map((medicine) => {
                   const stockPercent = Math.min(100, Math.max(8, Math.round((medicine.stock / 150) * 100)));
-                  const stockColor = medicine.stock <= 15 ? '#C62828' : medicine.status === 'Expiring' ? '#4A545E' : '#006644';
+                  const isExpired = medicine.status === 'Expired' || new Date(medicine.expiryDate) < new Date();
+                  const stockColor = isExpired ? '#C62828' : medicine.stock <= 15 ? '#C62828' : medicine.status === 'Expiring' ? '#4A545E' : '#006644';
+
+                  const isExpiring = medicine.status === 'Expiring';
 
                   return (
-                    <tr key={medicine.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={medicine.id} className={`transition-colors ${
+                      isExpired ? 'bg-red-50 hover:bg-red-100' : isExpiring ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-gray-50'
+                    }`}>
                       <td className="py-5 px-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 shadow-inner flex items-center justify-center shrink-0 overflow-hidden">
+                          <div className={`w-12 h-12 rounded-xl shadow-inner flex items-center justify-center shrink-0 overflow-hidden bg-gradient-to-br ${
+                            isExpired ? 'from-red-400 to-red-600' : isExpiring ? 'from-amber-400 to-orange-500' : 'from-green-400 to-emerald-600'
+                          }`}>
                             <span className="material-symbols-outlined text-white text-[18px]">
-                              {medicine.type === 'medication_liquid' ? 'water_drop' : medicine.type === 'vaccines' ? 'vaccines' : 'medication'}
+                              {isExpired ? 'event_busy' : medicine.type === 'medication_liquid' ? 'water_drop' : medicine.type === 'vaccines' ? 'vaccines' : 'medication'}
                             </span>
                           </div>
                           <div>
@@ -187,9 +194,22 @@ export default function InventoryOverview() {
                               {medicine.dosage}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-[11px] text-[#6B7280]">Batch: {medicine.batchNumber}</p>
-                              <span className="flex items-center gap-1 text-[9px] font-bold bg-[#EBF5FA] text-[#004A8F] px-2 py-0.5 rounded-full">
-                                {medicine.status}
+                              <p className="text-[11px] text-[#6B7280]">
+                                Batch: {medicine.batchNumber}
+                                {(isExpired || isExpiring) && (
+                                  <span className={`ml-2 font-bold ${isExpired ? 'text-red-600' : 'text-amber-600'}`}>
+                                    · Exp: {new Date(medicine.expiryDate).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </p>
+                              <span className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                                isExpired
+                                  ? 'bg-red-100 text-red-700'
+                                  : isExpiring
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-[#EBF5FA] text-[#004A8F]'
+                              }`}>
+                                {isExpired ? 'Expired' : medicine.status}
                               </span>
                             </div>
                           </div>

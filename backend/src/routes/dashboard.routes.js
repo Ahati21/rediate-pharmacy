@@ -12,6 +12,7 @@ router.get('/stats', requireAuth, requireRole('admin', 'pharmacist'), async (_re
       totalMedicines,
       lowStockCount,
       expiringCount,
+      expiredCount,
       totalOrders,
       pendingOrders,
       deliveredOrders,
@@ -26,6 +27,7 @@ router.get('/stats', requireAuth, requireRole('admin', 'pharmacist'), async (_re
         ] 
       }),
       Medicine.countDocuments({ status: 'Expiring' }),
+      Medicine.countDocuments({ status: 'Expired' }),
       Order.countDocuments(),
       Order.countDocuments({ status: 'pending' }),
       Order.countDocuments({ status: 'delivered' }),
@@ -35,7 +37,7 @@ router.get('/stats', requireAuth, requireRole('admin', 'pharmacist'), async (_re
 
     // Calculate total revenue from delivered orders
     const deliveredOrdersData = await Order.find({ status: 'delivered' });
-    const totalRevenue = deliveredOrdersData.reduce((sum, order) => sum + order.totalAmount, 0);
+    const totalRevenue = deliveredOrdersData.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
     res.json({
       success: true,
@@ -43,7 +45,8 @@ router.get('/stats', requireAuth, requireRole('admin', 'pharmacist'), async (_re
         inventory: {
           total: totalMedicines,
           lowStock: lowStockCount,
-          expiring: expiringCount
+          expiring: expiringCount,
+          expired: expiredCount
         },
         orders: {
           total: totalOrders,
@@ -84,6 +87,10 @@ function getSalesPeriodRange(period) {
 }
 
 function getSalesTrend(orders, period, rangeStart) {
+  // Use a slightly different target logic to avoid identical actual/target bars
+  // especially when revenue is zero.
+  const baseTarget = period === 'daily' ? 500 : period === 'weekly' ? 3000 : 12000;
+
   if (period === 'daily') {
     return [0, 4, 8, 12, 16, 20].map((hour) => {
       const revenue = orders
@@ -91,12 +98,13 @@ function getSalesTrend(orders, period, rangeStart) {
           const createdAt = new Date(order.createdAt);
           return createdAt.getHours() >= hour && createdAt.getHours() < hour + 4;
         })
-        .reduce((sum, order) => sum + order.totalAmount, 0);
+        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
+      const target = Math.max(baseTarget / 6, revenue * 1.15);
       return { 
         label: `${String(hour).padStart(2, '0')}:00`, 
         actual: Number(revenue.toFixed(2)),
-        projected: Number((revenue * 1.05).toFixed(2))
+        projected: Number(target.toFixed(2))
       };
     });
   }
@@ -108,13 +116,17 @@ function getSalesTrend(orders, period, rangeStart) {
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayStart.getDate() + 1);
       const revenue = orders
-        .filter((order) => order.createdAt >= dayStart && order.createdAt < dayEnd)
-        .reduce((sum, order) => sum + order.totalAmount, 0);
+        .filter((order) => {
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= dayStart && orderDate < dayEnd;
+        })
+        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
+      const target = Math.max(baseTarget / 7, revenue * 1.1);
       return {
         label: dayStart.toLocaleDateString('en-US', { weekday: 'short' }),
         actual: Number(revenue.toFixed(2)),
-        projected: Number((revenue * 1.1).toFixed(2))
+        projected: Number(target.toFixed(2))
       };
     });
   }
@@ -135,13 +147,17 @@ function getSalesTrend(orders, period, rangeStart) {
     const bucketEnd = new Date(monthStart);
     bucketEnd.setDate(bucket.end);
     const revenue = orders
-      .filter((order) => order.createdAt >= bucketStart && order.createdAt < bucketEnd && order.createdAt <= now)
-      .reduce((sum, order) => sum + order.totalAmount, 0);
+      .filter((order) => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= bucketStart && orderDate < bucketEnd && orderDate <= now;
+      })
+      .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
+    const target = Math.max(baseTarget / 5, revenue * 1.08);
     return { 
       label: bucket.label, 
       actual: Number(revenue.toFixed(2)),
-      projected: Number((revenue * 1.15).toFixed(2)) // Dummy projection
+      projected: Number(target.toFixed(2))
     };
   });
 }
@@ -151,17 +167,43 @@ router.get('/sales', requireAuth, requireRole('admin'), async (req, res, next) =
     const requestedPeriod = String(req.query.period || 'monthly').toLowerCase();
     const period = salesPeriods.has(requestedPeriod) ? requestedPeriod : 'monthly';
     const { start, end } = getSalesPeriodRange(period);
-    const deliveredOrders = await Order.find({
-      status: 'delivered',
-      createdAt: { $gte: start, $lte: end },
-    });
     
-    const totalSales = deliveredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-    const averageOrderValue = deliveredOrders.length > 0 ? totalSales / deliveredOrders.length : 0;
+    // Calculate previous period range
+    const prevStart = new Date(start);
+    const prevEnd = new Date(start);
+    if (period === 'daily') {
+      prevStart.setDate(start.getDate() - 1);
+    } else if (period === 'weekly') {
+      prevStart.setDate(start.getDate() - 7);
+    } else {
+      prevStart.setMonth(start.getMonth() - 1);
+    }
+
+    const [currentOrders, previousOrders] = await Promise.all([
+      Order.find({
+        $or: [{ status: 'delivered' }, { paymentStatus: 'completed' }],
+        createdAt: { $gte: start, $lte: end },
+      }),
+      Order.find({
+        $or: [{ status: 'delivered' }, { paymentStatus: 'completed' }],
+        createdAt: { $gte: prevStart, $lte: prevEnd },
+      })
+    ]);
     
+    const totalSales = currentOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const averageOrderValue = currentOrders.length > 0 ? totalSales / currentOrders.length : 0;
+    
+    const prevTotalSales = previousOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const prevAverageOrderValue = previousOrders.length > 0 ? prevTotalSales / previousOrders.length : 0;
+
+    const calculateChange = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Number((((current - previous) / previous) * 100).toFixed(1));
+    };
+
     // Aggregate by medicine
     const medicineSales = {};
-    deliveredOrders.forEach(order => {
+    currentOrders.forEach(order => {
       if (order.items && Array.isArray(order.items)) {
         order.items.forEach(item => {
           const key = item.name;
@@ -189,7 +231,8 @@ router.get('/sales', requireAuth, requireRole('admin'), async (req, res, next) =
     }));
 
     const totalSalesNum = Number(totalSales.toFixed(2));
-    const netProfit = Number((totalSalesNum * 0.338).toFixed(2)); // Mock 33.8% profit margin
+    const netProfit = Number((totalSalesNum * 0.35).toFixed(2)); // Estimated 35% margin
+    const prevNetProfit = Number((prevTotalSales * 0.35).toFixed(2));
     
     res.json({
       success: true,
@@ -197,12 +240,12 @@ router.get('/sales', requireAuth, requireRole('admin'), async (req, res, next) =
         totalSales: totalSalesNum,
         netProfit,
         averageOrderValue: Number(averageOrderValue.toFixed(2)),
-        totalOrders: deliveredOrders.length,
+        totalOrders: currentOrders.length,
         period,
         changes: {
-          sales: 12.4,
-          profit: 8.1,
-          avgValue: -2.1
+          sales: calculateChange(totalSalesNum, prevTotalSales),
+          profit: calculateChange(netProfit, prevNetProfit),
+          avgValue: calculateChange(averageOrderValue, prevAverageOrderValue)
         },
         range: {
           start: start.toISOString(),
@@ -218,7 +261,7 @@ router.get('/sales', requireAuth, requireRole('admin'), async (req, res, next) =
             icon: name.includes('Amox') ? 'pill' : name.includes('Lisino') ? 'monitor_heart' : 'medication'
           };
         }),
-        salesTrend: getSalesTrend(deliveredOrders, period, start),
+        salesTrend: getSalesTrend(currentOrders, period, start),
       }
     });
   } catch (error) {

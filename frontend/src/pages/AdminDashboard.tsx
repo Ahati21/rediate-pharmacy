@@ -89,7 +89,7 @@ export default function AdminDashboard() {
             <h3 className="text-6xl font-headline font-extrabold text-primary dark:text-blue-400 mb-2">{stats.inventory.total}</h3>
             <p className="text-tertiary dark:text-emerald-400 font-bold flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">payments</span>
-              ETB {stats.revenue.total.toLocaleString()} Revenue
+              ETB {stats.revenue.total > 0 ? stats.revenue.total.toLocaleString() : '0'} Revenue
             </p>
           </div>
           <span className="material-symbols-outlined absolute right-[-20px] bottom-[-20px] text-[180px] opacity-10 dark:opacity-5 text-primary dark:text-blue-400" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -183,6 +183,14 @@ export default function AdminDashboard() {
                 </div>
                 <span className="text-xl font-black text-primary">{stats.pharmacists.total}</span>
               </div>
+
+              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-900/30">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-red-600">event_busy</span>
+                  <span className="text-sm font-bold text-red-700 dark:text-red-400">Expired Medicines</span>
+                </div>
+                <span className="text-xl font-black text-red-600 dark:text-red-400">{stats.inventory.expired ?? 0}</span>
+              </div>
               
               <div>
                 <div className="flex justify-between mb-2">
@@ -192,7 +200,7 @@ export default function AdminDashboard() {
                 <div className="w-full bg-surface-container-lowest dark:bg-slate-900 h-2 rounded-full overflow-hidden">
                   <div 
                     className="bg-error h-full rounded-full" 
-                    style={{ width: `${Math.min(100, (stats.inventory.expiring / stats.inventory.total) * 100)}%` }}
+                    style={{ width: `${stats.inventory.total > 0 ? Math.min(100, (stats.inventory.expiring / stats.inventory.total) * 100) : 0}%` }}
                   ></div>
                 </div>
               </div>
